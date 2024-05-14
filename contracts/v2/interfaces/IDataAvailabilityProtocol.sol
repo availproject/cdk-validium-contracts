@@ -8,5 +8,5 @@ interface IDataAvailabilityProtocol {
     function verifyMessage(
         bytes32 hash,
         bytes calldata dataAvailabilityMessage
-    ) external view;
+    ) external;
 }

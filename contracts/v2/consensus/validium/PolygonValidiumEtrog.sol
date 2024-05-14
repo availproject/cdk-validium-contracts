@@ -232,6 +232,7 @@ contract PolygonValidiumEtrog is PolygonRollupBaseEtrog, IPolygonValidium {
                 accumulatedNonForcedTransactionsHash,
                 dataAvailabilityMessage
             );
+
         }
 
         uint64 currentBatchSequenced = rollupManager.onSequenceBatches(

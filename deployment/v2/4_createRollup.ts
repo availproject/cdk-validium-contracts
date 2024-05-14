@@ -72,9 +72,9 @@ async function main() {
         throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConensus}`);
     }
 
-    const dataAvailabilityProtocol = createRollupParameters.dataAvailabilityProtocol || "PolygonDataCommittee";
+    const dataAvailabilityProtocol = createRollupParameters.dataAvailabilityProtocol || "AvailAttestation";
 
-    const supporteDataAvailabilityProtocols = ["PolygonDataCommittee"];
+    const supporteDataAvailabilityProtocols = ["AvailAttestation"];
 
     if (
         consensusContract.includes("PolygonValidium") &&
@@ -294,6 +294,38 @@ async function main() {
         }
 
         outputJson.polygonDataCommitteeAddress = polygonDataCommittee?.target;
+    } else if (consensusContract.includes("PolygonValidium") && dataAvailabilityProtocol === "AvailAttestation") {
+        const AvailAttestationContract = (await ethers.getContractFactory("AvailAttestation", deployer)) as any;
+        let availAttestation;
+
+        for (let i = 0; i < attemptsDeployProxy; i++) {
+            try {
+                availAttestation = await upgrades.deployProxy(AvailAttestationContract, ["0x1369A4C9391cF90D393b40fAeAD521b0F7019dc5", "0x570f6a1936386a4e060C2Daebbd0b6f5C091e13f"], {
+                    unsafeAllow: ["constructor"],
+                });
+                break;
+            } catch (error: any) {
+                console.log(`attempt ${i}`);
+                console.log("upgrades.deployProxy of availAttestation ", error.message);
+            }
+            // reach limits of attempts
+            if (i + 1 === attemptsDeployProxy) {
+                throw new Error("availAttestation contract has not been deployed");
+            }
+        }
+        await availAttestation?.waitForDeployment();
+
+        // Load data commitee
+        const PolygonValidiumContract = (await PolygonconsensusFactory.attach(newZKEVMAddress)) as PolygonValidium;
+        // add data commitee to the consensus contract
+        await (await PolygonValidiumContract.setDataAvailabilityProtocol(availAttestation?.target as any)).wait();
+        console.log("#######################\n");
+        console.log("DataAvailabilityProtocol is set to:", await PolygonValidiumContract.dataAvailabilityProtocol());
+        console.log("RollupManager:", await PolygonValidiumContract.rollupManager());
+
+        await (await availAttestation?.transferOwnership(adminZkEVM)).wait();
+
+        outputJson.availAttestationAddress = availAttestation?.target;
     }
 
     // Assert admin address
