@@ -56,7 +56,7 @@ async function main() {
                     [timelockAdminAddress],
                     [timelockAdminAddress],
                     timelockAdminAddress,
-                    deployOutputParameters.polygonRollupManager,
+                    deployOutputParameters.polygonRollupManagerAddress,
                 ],
             },
         );
@@ -100,7 +100,7 @@ async function main() {
             {
                 address: deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
                 constructorArguments: [
-                    deployOutputParameters.polygonRollupManager,
+                    deployOutputParameters.polygonRollupManagerAddress,
                     deployOutputParameters.polygonZkEVMBridgeAddress,
                 ],
             },
@@ -179,7 +179,7 @@ async function main() {
                         deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
                         deployOutputParameters.polTokenAddress,
                         deployOutputParameters.polygonZkEVMBridgeAddress,
-                        deployOutputParameters.polygonRollupManager,
+                        deployOutputParameters.polygonRollupManagerAddress,
                     ],
                 },
             );
@@ -197,7 +197,7 @@ async function main() {
                         deployOutputParameters.polygonZkEVMGlobalExitRootAddress,
                         deployOutputParameters.polTokenAddress,
                         deployOutputParameters.polygonZkEVMBridgeAddress,
-                        deployOutputParameters.polygonRollupManager,
+                        deployOutputParameters.polygonRollupManagerAddress,
                     ],
                 },
             );
@@ -205,6 +205,25 @@ async function main() {
             // expect(error.message.toLowerCase().includes('proxyadmin')).to.be.equal(true);
         }
     }
+    await hre.run(
+        'verify:verify',
+        {
+            contract: 'contracts/v2/consensus/validium/AvailAttestation.sol:AvailAttestation',
+            address: await upgrades.erc1967.getImplementationAddress(createRollupOutputParameters.availAttestationAddress),
+        },
+    );
+    await hre.run(
+        'verify:verify',
+        {
+            contract: '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy',
+            address: createRollupOutputParameters.availAttestationAddress,
+            constructorArguments: [
+                await upgrades.erc1967.getImplementationAddress(createRollupOutputParameters.availAttestationAddress),
+                await upgrades.erc1967.getAdminAddress(createRollupOutputParameters.availAttestationAddress),
+                '0x',
+            ],
+        },
+    );
 }
 
 main()
