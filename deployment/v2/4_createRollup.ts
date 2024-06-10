@@ -46,6 +46,7 @@ async function main() {
         "adminZkEVM",
         "forkID",
         "consensusContract",
+        "availBridgeAddress",
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -64,6 +65,7 @@ async function main() {
         adminZkEVM,
         forkID,
         consensusContract,
+        availBridgeAddress
     } = createRollupParameters;
 
     const supportedConensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog"];
@@ -300,7 +302,7 @@ async function main() {
 
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
-                availAttestation = await upgrades.deployProxy(AvailAttestationContract, ["0x1369A4C9391cF90D393b40fAeAD521b0F7019dc5", "0x570f6a1936386a4e060C2Daebbd0b6f5C091e13f"], {
+                availAttestation = await upgrades.deployProxy(AvailAttestationContract, [availBridgeAddress], {
                     unsafeAllow: ["constructor"],
                 });
                 break;
@@ -367,6 +369,10 @@ async function main() {
     outputJson.consensusContract = consensusContract;
 
     fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
+    let deployOutputJson = JSON.parse(fs.readFileSync('./deployment/v2/deploy_output.json', 'utf8'));
+    const genesisJson = JSON.parse(fs.readFileSync('./deployment/v2/genesis.json', 'utf8'));
+    deployOutputJson = {...outputJson, ...deployOutputJson, ...genesisJson};
+    fs.writeFileSync('./deployment/v2/combined_output.json', JSON.stringify(deployOutputJson, null, 1));
 }
 
 main().catch((e) => {
