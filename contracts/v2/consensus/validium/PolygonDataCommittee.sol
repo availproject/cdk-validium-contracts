@@ -181,6 +181,13 @@ contract PolygonDataCommittee is
         }
     }
 
+    function verifyMessage(
+        bytes32,
+        IAvailBridge.MerkleProofInput calldata
+    ) external pure {
+        revert();
+    }
+
     /**
      * @notice Return the amount of committee members
      */

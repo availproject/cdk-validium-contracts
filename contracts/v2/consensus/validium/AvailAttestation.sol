@@ -1,32 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.25;
 
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAvailBridge} from "../../interfaces/IAvailBridge.sol";
 import {IVectorx} from "../../interfaces/IVectorx.sol";
 import {IDataAvailabilityProtocol} from "../../interfaces/IDataAvailabilityProtocol.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AvailAttestationLib} from "../../lib/AvailAttestationLib.sol";
 
-contract AvailAttestation is IDataAvailabilityProtocol, OwnableUpgradeable {
-    IAvailBridge public avail;
-    IVectorx public vectorx;
-
-    error BadHash();
-    error InvalidMerkleProof();
-
-    struct BatchDAData {
-        uint256 blockNumber;
-        uint256 leafIndex;
-    }
-
-    mapping(bytes32 => BatchDAData) public attestations;
-
+contract AvailAttestation is OwnableUpgradeable, IDataAvailabilityProtocol, AvailAttestationLib {
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(IAvailBridge _avail, IVectorx _vectorx) external initializer {
-        avail = _avail;
-        vectorx = _vectorx;
+    function initialize(IAvailBridge bridge) external initializer {
+        __AvailAttestation_init(bridge);
         __Ownable_init_unchained();
     }
 
@@ -35,17 +22,16 @@ contract AvailAttestation is IDataAvailabilityProtocol, OwnableUpgradeable {
     }
 
     function verifyMessage(
-        bytes32 hash,
-        bytes calldata dataAvailabilityMessage
+        bytes32,
+        IAvailBridge.MerkleProofInput calldata dataAvailabilityMessage
     ) external {
-        // todo: fix flow later! external -> external view
-        IAvailBridge.MerkleProofInput memory proof = abi.decode(dataAvailabilityMessage, (IAvailBridge.MerkleProofInput));
-        if (hash != proof.leaf) revert BadHash();
-        if (!avail.verifyBlobLeaf(proof)) revert InvalidMerkleProof();
+        _attest(dataAvailabilityMessage);
+    }
 
-        attestations[hash] = BatchDAData({
-            blockNumber: vectorx.rangeStartBlocks(proof.rangeHash) + proof.dataRootIndex,
-            leafIndex: proof.leafIndex
-        });
+    function verifyMessage(
+        bytes32,
+        bytes calldata
+    ) external pure {
+        revert();
     }
 }

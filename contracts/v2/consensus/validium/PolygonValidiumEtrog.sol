@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import "../../lib/PolygonRollupBaseEtrog.sol";
 import "../../interfaces/IDataAvailabilityProtocol.sol";
 import "../../interfaces/IPolygonValidium.sol";
+import {IAvailBridge} from "../../interfaces/IAvailBridge.sol";
 
 /**
  * Contract responsible for managing the states and the updates of L2 network.
@@ -17,6 +18,7 @@ import "../../interfaces/IPolygonValidium.sol";
 contract PolygonValidiumEtrog is PolygonRollupBaseEtrog, IPolygonValidium {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    error InvalidDataAvailabilityMessage();
     /**
      * @notice Struct which will be used to call sequenceBatches
      * @param transactionsHash keccak256 hash of the L2 ethereum transactions EIP-155 or pre-EIP-155 with signature:
@@ -92,7 +94,7 @@ contract PolygonValidiumEtrog is PolygonRollupBaseEtrog, IPolygonValidium {
         uint64 maxSequenceTimestamp,
         uint64 initSequencedBatch,
         address l2Coinbase,
-        bytes calldata dataAvailabilityMessage
+        IAvailBridge.MerkleProofInput calldata dataAvailabilityMessage
     ) external onlyTrustedSequencer {
         uint256 batchesNum = batches.length;
         if (batchesNum == 0) {
@@ -227,12 +229,10 @@ contract PolygonValidiumEtrog is PolygonRollupBaseEtrog, IPolygonValidium {
             );
 
             // Validate that the data availability protocol accepts the dataAvailabilityMessage
-            // note This is a view function, so there's not much risk even if this contract was vulnerable to reentrant attacks
             dataAvailabilityProtocol.verifyMessage(
                 accumulatedNonForcedTransactionsHash,
                 dataAvailabilityMessage
             );
-
         }
 
         uint64 currentBatchSequenced = rollupManager.onSequenceBatches(
