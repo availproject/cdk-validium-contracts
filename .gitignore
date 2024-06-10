@@ -24,3 +24,4 @@ create_rollup_parameters.json
 docker/deploymentOutput
 genesis.json
 create_rollup_output.json
+combined_output.json
